@@ -1,6 +1,6 @@
    /* --- CSS 样式部分 --- */
 
-        /* 1. 全局设置：去除默认边距，设置字体 */
+        /* 1. 全局设置：去除默认边距，设置字体 , 通过这样的方式,可以实现网页的全局覆盖 */
         body, html {
             margin: 0;
             padding: 0;
@@ -53,7 +53,7 @@
             left: 0;
             width: 100%;
             height: 80px;
-            background: rgba(0, 0, 0, 0.6); /* 半透明黑色背景 */
+            background: rgba(85, 79, 79, 0.6); /* 半透明黑色背景 */
             backdrop-filter: blur(10px); /* 毛玻璃效果 */
             display: flex;
             align-items: center;
@@ -115,3 +115,31 @@
             border-radius: 5px;
             transition: width 0.1s linear;
         }
+
+
+.lyrics-panel {
+    /* --- 1. 定位核心 (左侧居中) --- */
+    position: fixed;  /* 固定定位：钉在屏幕上 */
+    top: 50%;         /* 顶部先走到屏幕中间 */
+    left: 30px;       /* 距离左边屏幕 30px */
+    /* 【关键魔法】因为 top:50% 是以窗口顶部为准的，所以要向上回退自身高度的一半，才能真正垂直居中 */
+    transform: translateY(-50%); 
+    z-index: 5;       /* 层级：比背景(-1)高，比底部播放器(10)低 */
+
+    /* --- 2. 窗口大小与外观 --- */
+    width: 260px;     /* 宽度 */
+    height: 400px;    /* 固定高度 */
+    /* 保持风格统一：半透明黑色 + 毛玻璃 */
+    background: rgba(235, 229, 229, 0.2); /* 半透明白色 */
+    backdrop-filter: blur(10px);
+    border-radius: 15px; /* 圆角 */
+    padding: 20px;       /* 内边距，别让字贴边 */
+    color: #ffffff;      /* 白色文字 */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* 加点阴影更有立体感 */
+
+    /* --- 3. 【重要】滚动条设置 --- */
+    overflow-y: auto; /* 如果歌词太长，自动出现垂直滚动条 */
+    /* 隐藏丑丑的默认滚动条 (Webkit内核浏览器有效) */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE 10+ */
+}
