@@ -19,6 +19,15 @@
         </div>
     </div>
 
+    <div class="playlist-panel" id="playlist-panel">
+        <div class="playlist-header">
+            <h3>播放列表</h3>
+            <button class="close-btn" id="close-playlist">×</button>
+        </div>
+        <ul class="playlist-list" id="playlist-list">
+            </ul>
+    </div>
+
     <div class="music-player">
         <audio id="audio-element"></audio>
 
@@ -34,6 +43,10 @@
             
             <button class="btn-control" id="next-btn" aria-label="下一曲">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+
+            <button class="btn-control" id="playlist-toggle" aria-label="歌单">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/></svg>
             </button>
             
             <div class="song-info">

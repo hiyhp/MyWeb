@@ -2,19 +2,19 @@
    ⚙️ 自动化配置区 (请务必修改这里)
 ========================================= */
 const config = {
-    githubUsername: "hiyhp",      // 你的 GitHub 用户名
-    githubRepo: "MyWeb",      // 你的仓库名 (是 opticfuns 还是 hiyhp.github.io？请确认)
-    folderPath: "Music"           // 音乐文件夹名字
+    githubUsername: "hiyhp",      
+    githubRepo: "MyWeb",      // 你的仓库名 (请确认是 opticfuns 还是 MyWeb)
+    folderPath: "Music"           
 };
 
 /* =========================================
    🎵 全局变量
 ========================================= */
-let songs = []; // 歌曲列表将通过 API 自动填充
+let songs = []; 
 let currentSongIndex = 0;
 let lyricsData = [];
 
-/* DOM 元素获取 */
+/* DOM 元素 */
 const audio = document.getElementById('audio-element');
 const playBtn = document.getElementById('play-btn');
 const prevBtn = document.getElementById('prev-btn');
@@ -28,26 +28,26 @@ const songArtist = document.getElementById('song-artist');
 const lyricsList = document.querySelector('.lyrics-list');
 const lyricsTitle = document.getElementById('lyrics-title');
 
+// 新增 DOM
+const playlistPanel = document.getElementById('playlist-panel');
+const playlistToggle = document.getElementById('playlist-toggle');
+const closePlaylistBtn = document.getElementById('close-playlist');
+const playlistList = document.getElementById('playlist-list');
+
 /* =========================================
-   🚀 核心：自动扫描 GitHub 文件夹
+   🚀 核心：自动扫描 & 初始化
 ========================================= */
 async function initMusicPlayer() {
-    // 1. 显示加载状态
-    songTitle.innerText = "正在扫描歌曲...";
+    songTitle.innerText = "扫描歌曲...";
     songArtist.innerText = "连接 GitHub...";
     
     try {
-        // 2. 请求 GitHub API 获取文件列表
         const apiUrl = `https://api.github.com/repos/${config.githubUsername}/${config.githubRepo}/contents/${config.folderPath}`;
         const response = await fetch(apiUrl);
         
-        if (!response.ok) {
-            throw new Error(`GitHub API 限制或仓库名错误 (代码: ${response.status})`);
-        }
+        if (!response.ok) throw new Error("API连接失败");
 
         const files = await response.json();
-
-        // 3. 筛选出 mp3 文件
         const mp3Files = files.filter(file => file.name.endsWith('.mp3'));
         
         if (mp3Files.length === 0) {
@@ -55,65 +55,137 @@ async function initMusicPlayer() {
             return;
         }
 
-        // 4. 自动构建歌曲列表
         songs = mp3Files.map(file => {
-            // 解析文件名：假设格式为 "歌手 - 歌名.mp3"
             const fileName = file.name.replace('.mp3', '');
-            const parts = fileName.split('-'); // 按横杠分割
+            const parts = fileName.split('-'); 
             
             let artist = "未知歌手";
             let title = fileName;
 
-            // 如果文件名里有横杠，就尝试提取歌手和歌名
             if (parts.length >= 2) {
                 artist = parts[0].trim();
                 title = parts[1].trim();
             }
 
-            // 自动推测 lrc 地址 (假设 lrc 文件名和 mp3 一样)
-            const lrcName = file.name.replace('.mp3', '.lrc');
-            
             return {
                 title: title,
                 artist: artist,
-                // 使用相对路径，比 API 链接更稳定
                 src: `./${config.folderPath}/${file.name}`,
-                lrc: `./${config.folderPath}/${lrcName}`
+                lrc: `./${config.folderPath}/${file.name.replace('.mp3', '.lrc')}`,
+                fileName: file.name // 用于下载
             };
         });
 
-        console.log("成功加载歌曲:", songs);
-
-        // 5. 列表构建完成，开始加载第一首
+        console.log("加载成功:", songs);
+        
+        // 渲染播放列表
+        renderPlaylist();
+        
+        // 加载第一首
         loadSong(songs[0]);
 
     } catch (error) {
         console.error(error);
         songTitle.innerText = "加载失败";
-        songArtist.innerText = "请检查 index.js 配置";
-        alert("无法自动获取歌曲列表，可能是仓库名填错了，或者 API 超限。\n请按 F12 查看控制台报错。");
+        songArtist.innerText = "配置错误";
     }
 }
 
-// 启动程序
 initMusicPlayer();
 
 /* =========================================
-   以下是标准的播放器逻辑 (无需改动)
+   📜 播放列表与下载逻辑 (新增)
 ========================================= */
+function renderPlaylist() {
+    playlistList.innerHTML = '';
+    
+    songs.forEach((song, index) => {
+        const li = document.createElement('li');
+        li.className = `playlist-item ${index === currentSongIndex ? 'active' : ''}`;
+        
+        // 列表点击切歌
+        li.onclick = (e) => {
+            // 如果点的是下载按钮，不切歌
+            if(e.target.closest('.download-btn')) return;
+            
+            currentSongIndex = index;
+            loadSong(songs[currentSongIndex]);
+            audio.play();
+            updatePlayBtn();
+            updatePlaylistHighlight();
+            
+            // 手机端点击后自动收起列表
+            if(window.innerWidth <= 768) {
+                playlistPanel.classList.remove('show');
+            }
+        };
 
-// 加载歌曲
+        li.innerHTML = `
+            <div class="song-meta">
+                <span class="song-name">${song.title}</span>
+                <span class="song-artist-mini">${song.artist}</span>
+            </div>
+            <button class="download-btn" onclick="downloadSong('${song.src}', '${song.fileName}')" title="下载">
+                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </button>
+        `;
+        
+        playlistList.appendChild(li);
+    });
+}
+
+function updatePlaylistHighlight() {
+    const items = document.querySelectorAll('.playlist-item');
+    items.forEach((item, index) => {
+        if (index === currentSongIndex) {
+            item.classList.add('active');
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// 下载功能
+window.downloadSong = function(url, filename) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename; // 触发浏览器下载
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+// 侧边栏开关
+playlistToggle.addEventListener('click', () => {
+    playlistPanel.classList.add('show');
+});
+
+closePlaylistBtn.addEventListener('click', () => {
+    playlistPanel.classList.remove('show');
+});
+
+// 点击背景关闭列表 (可选)
+document.addEventListener('click', (e) => {
+    if (!playlistPanel.contains(e.target) && !playlistToggle.contains(e.target) && playlistPanel.classList.contains('show')) {
+        playlistPanel.classList.remove('show');
+    }
+});
+
+
+/* =========================================
+   🎵 基础播放控制
+========================================= */
 function loadSong(song) {
     songTitle.innerText = song.title;
     songArtist.innerText = song.artist;
     lyricsTitle.innerText = song.title;
     audio.src = song.src;
 
-    // 尝试加载歌词
     fetchLyrics(song.lrc);
+    updatePlaylistHighlight(); // 确保列表高亮同步
 }
 
-// 读取 LRC 文件
 async function fetchLyrics(url) {
     lyricsList.innerHTML = '<li class="loading">歌词加载中...</li>';
     try {
@@ -128,7 +200,6 @@ async function fetchLyrics(url) {
     }
 }
 
-// 解析 LRC
 function parseLRC(lrcString) {
     const lines = lrcString.split('\n');
     const result = [];
@@ -147,7 +218,6 @@ function parseLRC(lrcString) {
     return result;
 }
 
-// 渲染歌词
 function renderLyrics(data) {
     lyricsList.innerHTML = '';
     const placeholderTop = document.createElement('li');
@@ -166,7 +236,6 @@ function renderLyrics(data) {
     lyricsList.appendChild(placeholderBottom);
 }
 
-/* 播放控制 */
 function updatePlayBtn() {
     if (audio.paused) {
         playIcon.style.display = 'block';
@@ -207,7 +276,6 @@ prevBtn.addEventListener('click', prevSong);
 nextBtn.addEventListener('click', nextSong);
 audio.addEventListener('ended', nextSong);
 
-/* 进度与歌词同步 */
 audio.addEventListener('timeupdate', () => {
     const { duration, currentTime } = audio;
     if (duration) {
