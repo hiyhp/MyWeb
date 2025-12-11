@@ -27,7 +27,7 @@ body, html {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background-image: url('./imgs/【哲风壁纸】休闲-帐篷-户外.png'); 
+    background-image: url('./imgs/bg.png'); 
     background-size: cover;
     background-position: center;
     z-index: -1;
